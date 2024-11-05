@@ -130,6 +130,8 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, epochs, d
         with torch.no_grad():  # No need to calculate gradients for validation
             for inputs, targets, *_ in val_loader:
                 inputs, targets = inputs.to(device), targets.to(device)
+                #Same sus thing as above here.
+                targets = targets.argmax(dim=1)
                 
                 # Forward pass
                 outputs = model(inputs)
