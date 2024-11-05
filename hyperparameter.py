@@ -5,6 +5,7 @@ The hyperparameters make it possible to alter and change the tunable parameters 
 After training the hyperparameters are saved in results/RunXXX.
 """
 
+#I use cc because it has less files than nccc so it is faster.
 nc = False
 cc = True
 nccc = False
@@ -49,7 +50,7 @@ elif nccc:
     interaction = 'nccc'
 
 
-
+#Here I make it way faster by using only 10 events per file.
 n_events_per_file = 10
 data_name = 'shallow_baseline_'     #deep_baseline_10k_00000X.npy
 
