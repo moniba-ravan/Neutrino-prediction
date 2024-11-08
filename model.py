@@ -47,33 +47,46 @@ class PatchEmbedding(nn.Module):
         x = self.position_embeddings + x
         x = self.dropout(x)
         return x
-    
-#The fancy class itself, a lot of parameters to keep track of here, 
-#I know what half of them mean and I am confused about the other half
+   
 
-class ViT(nn.Module):
-    def __init__(self, embed_dim, patch_size, num_patches, dropout, in_channels, num_heads, num_encoders, expansion, num_classes):
-        super().__init__()
-        self.embeddings_block = PatchEmbedding(embed_dim, patch_size, num_patches, dropout, in_channels)
+class ViTLightningModule(pl.LightningModule):
+
+    def __init__(self):
         
-        encoder_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=num_heads, dropout=dropout, dim_feedforward=int(embed_dim*expansion), activation="gelu", batch_first=True, norm_first=True)
-        self.encoder_blocks = nn.TransformerEncoder(encoder_layer, num_layers=num_encoders)
+        #Defines the layers used in the model.
 
-        self.mlp_head = nn.Sequential(
-            nn.LayerNorm(normalized_shape=embed_dim),
-            nn.Linear(in_features=embed_dim, out_features=num_classes)
-        )
-
-    def forward(self, x):
-        x = self.embeddings_block(x)
-        x = self.encoder_blocks(x)
-        x = self.mlp_head(x[:, 0, :])  # Apply MLP on the CLS token only
-        return x
+        super().__init__()
     
+        self.automatic_optimization = hyperparameter.auto_opt
+        device = torch.device(f"cuda:0")
+        #device = torch.device("cpu")
 
-    #From this line and below I included the optimizers and training that they already provided for us, 
-    #but I'm not using it yet (I don't think atleast) so this can be ignored or maybe even removed 
+        flow_options_overwrite = {}
+        flow_options_overwrite['f'] = dict()
+        flow_options_overwrite['f']['add_vertical_rq_spline_flow'] = 1
+        flow_options_overwrite['f']["vertical_smooth"] = 1
+        flow_options_overwrite['f']["vertical_fix_boundary_derivative"] = 1
+        flow_options_overwrite['f']["spline_num_basis_functions"] = 2
+        flow_options_overwrite["f"]["boundary_cos_theta_identity_region"] = 0
 
+        self.pdf_energy = jammy_flows.pdf("e1", "ggt", conditional_input_dim=hyperparameter.cond_input, options_overwrite=flow_options_overwrite).to(device)
+        self.pdf_direction = jammy_flows.pdf("s2", "fffffffffffffff", conditional_input_dim=hyperparameter.cond_input, options_overwrite=flow_options_overwrite).to(device)
+
+        self.class_criterion = nn.BCELoss()
+        self.classifier = nn.Sequential(    
+                            nn.Linear(1000, 1),
+                            nn.Sigmoid() 
+                            )
+        
+        self.transformer = ViT(embed_dim=768, patch_size=(5, 32), num_patches=16, dropout=0.001, in_channels=1, num_heads=8, num_encoders=4, expansion=128, num_classes=1000)
+    
+    def forward(self, x):
+        x = self.transformer(x)
+        return x
+
+    def second_init(self, data):
+        self.pdf.init_params(data) 
+    
     def configure_optimizers(self): 
 
         #Defines the optimizer used in the model.
@@ -167,3 +180,22 @@ class ViT(nn.Module):
         self.log('val_pdf_energy', -log_pdf_energy.mean())
         self.log('val_pdf_direction', -log_pdf_direction.mean())
         self.log('val_total_loss', final_loss)
+
+class ViT(nn.Module):
+    def __init__(self, embed_dim, patch_size, num_patches, dropout, in_channels, num_heads, num_encoders, expansion, num_classes):
+        super().__init__()
+        self.embeddings_block = PatchEmbedding(embed_dim, patch_size, num_patches, dropout, in_channels)
+
+        encoder_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=num_heads, dropout=dropout, dim_feedforward=int(embed_dim*expansion), activation="gelu", batch_first=True, norm_first=True)
+        self.encoder_blocks = nn.TransformerEncoder(encoder_layer, num_layers=num_encoders)
+
+        self.mlp_head = nn.Sequential(
+            nn.LayerNorm(normalized_shape=embed_dim),
+            nn.Linear(in_features=embed_dim, out_features=num_classes)
+        )
+
+    def forward(self, x):
+        x = self.embeddings_block(x)
+        x = self.encoder_blocks(x)
+        x = self.mlp_head(x[:, 0, :])  # Apply MLP on the CLS token only
+        return x
