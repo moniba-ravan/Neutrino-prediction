@@ -21,8 +21,8 @@ from pytorch_lightning.callbacks import StochasticWeightAveraging
 import warnings
 warnings.filterwarnings("ignore")
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = 'cpu'
-
+device = torch.device('cpu')
+torch.cuda.empty_cache()
 """
 Calls hyperparameter, model and data_loader. Trains the model on the specified training data and saves the trained model. 
 """
@@ -76,89 +76,71 @@ val = data_loader.Prepare_Dataset(file_ids=list_of_file_ids_val, points = hyperp
 train_loader = DataLoader(train, batch_size=hyperparameter.batchSize, shuffle=False, num_workers=hyperparameter.worker_num)
 val_loader = DataLoader(val, batch_size=hyperparameter.batchSize, shuffle=False, num_workers=hyperparameter.worker_num)
 
-data_iter = iter(train_loader)
-images, labels, __, __ = next(data_iter)
-#print(images.shape, labels.shape)       #torch.Size([128, 1, 5, 512])   torch.Size([128, 2])
-
-
 #---------load the model
-#model = model.ViT(768, 4, 5, 0.001, 1, 8, 4, 128, 10)
 
-#This is where I make changes and use my own made model:
-model = model.ViT(embed_dim=768, patch_size=(5, 16), num_patches=32, dropout=0.001, in_channels=1, num_heads=8, num_encoders=4, expansion=128, num_classes=10)
+#This is where we load our new model:
+model = model.ViTLightningModule()
 
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), betas=(0.9, 0.999), lr=1e-4, weight_decay=0)
+model.float()
+model.pdf_energy.double()
+model.pdf_direction.double()
 
-#I'm not even sure if I put this function in the correct spot or if it should be in the model class, let's discuss sometime
-def train_model(model, train_loader, val_loader, criterion, optimizer, epochs, device):
-    ii = 0   #To keep count of how many training steps we take
-    model = model.to(device)  #I put this as they always do but GPU did not really work for me so I use CPU
-    for epoch in range(epochs):
-        model.train()  #Set model to training mode
-        total_train_loss = 0
-        
-        #Training step
-        for batch_idx, (inputs, targets, *_) in enumerate(train_loader):
-            ii += 1
-            print(ii)    #Count training step
+#---------define callbacks
+mc = ModelCheckpoint(dirpath=saved_model_dir, filename= 'model_checkpoint', 
+    monitor='val_total_loss', verbose=1, save_top_k=3)
 
-            inputs, targets = inputs.to(device), targets.to(device)
-            #I use the following line to remove an unwanted dimension because target was (128, 2), this might be sus to do idk.
-            targets = targets.argmax(dim=1)
-            optimizer.zero_grad()  #Clear gradients from the last iteration
+es = EarlyStopping("val_total_loss", patience=hyperparameter.es_patience, min_delta=hyperparameter.es_min_delta, verbose=1)
+
+swa = StochasticWeightAveraging(swa_lrs=1e-2)
+
+callbacks = [es, mc, swa]
+tb_logger = TensorBoardLogger(saved_model_dir, name="tb_logger", version='version1_')
+
+trainer = pl.Trainer(
+    devices=1, 
+    callbacks = callbacks, 
+    max_epochs = hyperparameter.epochs,
+    log_every_n_steps=1,
+    logger = tb_logger,
+    precision = 32
+    )
+
+cont_counter = 0
+max_counter = 100
+
+best_checkpoint_path = None
+#best_checkpoint_path = '/mnt/hdd/nheyer/gen2_shallow_reco/reconstruction/mix_model/results/Run008/model/model_checkpoint.ckpt'
+
+while cont_counter < max_counter:
+
+    try:
+        #---------training
+        trainer = pl.Trainer(
+            devices=1, 
+            callbacks = callbacks, 
+            max_epochs = hyperparameter.epochs,
+            log_every_n_steps=1,
+            logger = tb_logger,
+            precision = 32
+            )
+
+        trainer.fit(model, train_loader, val_loader, ckpt_path = best_checkpoint_path)
+        break
+
+    except Exception as error:
+        cont_counter += 1
+        print('error: ', error)
+        print('Unexpected error, starting continuation = ', cont_counter)
+
+        best_checkpoint_path = saved_model_dir + '/version1_model_checkpoint.ckpt'
+
+        if not os.path.isfile(best_checkpoint_path):
             
-            # Forward pass
-            outputs = model(inputs)
-            loss = criterion(outputs, targets)
-            
-            # Backward pass and optimization
-            loss.backward()
-            optimizer.step()
-            
-            # Update training loss
-            total_train_loss += loss.item()
-        
-        # Calculate average loss for the epoch
-        avg_train_loss = total_train_loss / len(train_loader)
-        print(f"Epoch [{epoch+1}/{epochs}], Train Loss: {avg_train_loss:.4f}")
-        
-        # Validation step
-        model.eval()  # Set model to evaluation mode
-        total_val_loss = 0
-        correct = 0
-        with torch.no_grad():  # No need to calculate gradients for validation
-            for inputs, targets, *_ in val_loader:
-                inputs, targets = inputs.to(device), targets.to(device)
-                #Same sus thing as above here.
-                targets = targets.argmax(dim=1)
-                
-                # Forward pass
-                outputs = model(inputs)
-                loss = criterion(outputs, targets)
-                
-                # Update validation loss
-                total_val_loss += loss.item()
-                
-                # Calculate accuracy
-                _, predicted = torch.max(outputs, 1)
-                correct += (predicted == targets).sum().item()
-        
-        # Calculate average validation loss and accuracy for the epoch
-        avg_val_loss = total_val_loss / len(val_loader)
-        val_accuracy = correct / len(val_loader.dataset)
-        
-        print(f"Epoch [{epoch+1}/{epochs}], Val Loss: {avg_val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}")
-        
-    print("Training complete.")
+            print('starting from the beginning, cont= ', cont_counter)
 
-#Use the training function
-train_model(
-    model=model,
-    train_loader=train_loader,
-    val_loader=val_loader,
-    criterion=criterion,
-    optimizer=optimizer,
-    epochs=hyperparameter.epochs,
-    device=device
-)
+            best_checkpoint_path = None
+
+        trainer.fit(model, train_loader, val_loader, ckpt_path = best_checkpoint_path)
+
+#---------save model  
+torch.save(model.state_dict(), saved_model_dir + '/model_' + args.Run_number + '.pt')
