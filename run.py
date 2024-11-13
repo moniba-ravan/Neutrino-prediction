@@ -80,6 +80,8 @@ val_loader = DataLoader(val, batch_size=hyperparameter.batchSize, shuffle=False,
 
 #This is where we load our new model:
 model = model.ViTLightningModule()
+#If you want to run their stuff instead then comment out the above line and uncomment this one:
+#model = model.Split()
 
 model.float()
 model.pdf_energy.double()
