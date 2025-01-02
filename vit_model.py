@@ -114,8 +114,7 @@ class ViTLightningModule(pl.LightningModule):
             nn.BatchNorm2d(256),
             )
         
-        #self.transformer = ViT(embed_dim=512, patch_size=(1, 512), num_patches=5, dropout=0.001, in_channels=1, num_heads=8, num_encoders=4, expansion=2, num_classes=512)
-        self.transformer = ViT(embed_dim=256, patch_size=(16, 16), num_patches=256, dropout=0.001, in_channels=5, num_heads=8, num_encoders=8, expansion=2, num_classes=512)
+        self.transformer = ViT(embed_dim=hyperparameter.embed_dim, patch_size=hyperparameter.patch_size, num_patches=hyperparameter.num_patches, dropout=hyperparameter.dropout, in_channels=hyperparameter.in_channels, num_heads=hyperparameter.num_heads, num_encoders=hyperparameter.num_encoders, expansion=hyperparameter.expansion, num_classes=hyperparameter.num_classes)
     
     def forward(self, x):
         #print(x.shape)            #torch.Size([128, 1, 5, 512])
@@ -227,7 +226,6 @@ class ViTLightningModule(pl.LightningModule):
         self.log('val_total_loss', final_loss)
 
 
-#self.transformer = ViT(embed_dim=256, patch_size=(16, 16), num_patches=256, dropout=0.001, in_channels=5, num_heads=8, num_encoders=4, expansion=2, num_classes=512)
 class ViT(nn.Module):
     def __init__(self, embed_dim, patch_size, num_patches, dropout, in_channels, num_heads, num_encoders, expansion, num_classes):
         super().__init__()

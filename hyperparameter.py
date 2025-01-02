@@ -12,6 +12,18 @@ This script defines tunable parameters for the model, dataset, and training proc
 model = "vit_model"  # Options: "resnet34", "vit_model", "transformer_model"
 
 
+# ViT hyperparameters
+cond_input_ViT = 512
+embed_dim = 256
+patch_size = (16, 16)
+num_patches = 256
+dropout = 0.001
+in_channels = 5
+num_heads = 8
+num_encoders = 4
+expansion = 2
+num_classes = 512
+
 # ==============================
 # Detector and Data Configuration
 # ==============================
