@@ -30,7 +30,6 @@ def add_extra_info(data):
 
 #---------create file structure
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", type=str, choices=["resnet34", "vit"], default="vit", help="Choose the model to use")
 parser.add_argument("--Run_number", type=str, default='RunXXX', help="Name a new Run to be saved")
 args = parser.parse_args()
 
@@ -76,12 +75,11 @@ train_loader = DataLoader(train, batch_size=hyperparameter.batchSize, shuffle=Fa
 val_loader = DataLoader(val, batch_size=hyperparameter.batchSize, shuffle=False, num_workers=hyperparameter.worker_num)
 
 #---------load the model
-model = get_model(args.model)  # Update with the correct number of classes
+model = get_model(hyperparameter.model)  # Update with the correct number of classes
 
 model.float()
 model.pdf_energy.double()
 model.pdf_direction.double()
-
 
 #---------define callbacks
 mc = ModelCheckpoint(dirpath=saved_model_dir, filename= 'model_checkpoint', 
