@@ -12,11 +12,11 @@ import numpy as np
 
 
 
-"""
+
 """
 A class representing the Vision transformer model.
 """
-"""
+
 
 def get_model():
     print("Using Vision Transformer (ViT) model")
