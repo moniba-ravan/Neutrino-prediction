@@ -1,8 +1,8 @@
 import numpy as np
 
 """
-The hyperparameters make it possible to alter and change the tunable parameters in a specific model class.
-After training the hyperparameters are saved in results/RunXXX.
+Hyperparameters for the model training.
+This script defines tunable parameters for the model, dataset, and training process.
 """
 
 # ==============================
