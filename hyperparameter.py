@@ -10,7 +10,6 @@ This script defines tunable parameters for the model, dataset, and training proc
 # ==============================
 
 model = "vit_model"  # Options: "resnet34", "vit_model", "transformer_model"
-base_dir = '/mnt/hdd/moniba/Neutrino-prediction'
 
 
 # ==============================
