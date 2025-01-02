@@ -21,20 +21,21 @@ import sys
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--Run_number", type=str, default='RunXXX', help="Name a new Run to be saved")
-parser.add_argument("--version", type=str, default='RunXXX', help="Name a new Run to be saved")
+parser.add_argument("--version", type=str, default='v1', help="Name a new Run to be saved")
 
 parser.add_argument("--test_batchSize", type=int, default=16, help="test batch size")
 
 args = parser.parse_args()
 
-base_dir = hyperparameter.base_dir
+base_dir = '/mnt/hdd/moniba/Neutrino-prediction' 
 model_dir = base_dir + '/results/' + args.Run_number + '/model/'
-model_file = 'model_checkpoint' + args.version + '.ckpt'
+model_file = 'model_checkpoint-' + args.version + '.ckpt'
 
-hyper_file = base_dir + '/results/' + args.Run_number + '/hyperparameter_' + args.Run_number
 
 # load hyperparemeters
-spec = importlib.util.spec_from_file_location('hyperparameter', base_dir + '/results/' + args.Run_number + '/hyperparameter_' + args.Run_number + '.py')
+hyper_file = base_dir + '/results/' + args.Run_number + '/hyperparameter_' + args.Run_number + '.py'
+print(hyper_file)
+spec = importlib.util.spec_from_file_location('hyperparameter', hyper_file)
 hyperparameter = importlib.util.module_from_spec(spec)
 sys.modules['hyperparameter'] = hyperparameter
 spec.loader.exec_module(hyperparameter)
@@ -199,9 +200,9 @@ with torch.no_grad():
         lll += 1
         
         if lll == 600:
-            np.save(save_path + 'results' + args.version + '.npy', results_dict)
+            np.save(save_path + 'results-' + args.version + '.npy', results_dict)
 
-np.save(save_path + 'results' + args.version + '.npy', results_dict)
+np.save(save_path + 'results-' + args.version + '.npy', results_dict)
 
 
 

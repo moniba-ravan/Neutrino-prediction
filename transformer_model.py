@@ -22,6 +22,29 @@ def get_model():
     print("Using Original Transformer model")
     return TransTLightningModule()
 
+import hyperparameter
+import torch.nn as nn
+import pytorch_lightning as pl
+import torch
+from torch.optim.lr_scheduler import ReduceLROnPlateau 
+import torch.nn.functional as F
+import jammy_flows
+from torchvision.models import resnet34
+from torchvision.models import resnet50
+from torchvision.models import resnext101_32x8d
+import numpy as np
+import math
+
+
+
+"""
+Every class is a different 'class' of model that can be tuned and optimized by changing the hyperparameter in hyperparameter.py.
+After training the model is saved in results/RunXXX/model.
+"""
+
+#The patch embedding from the article that me and Sissi where reading, it includes positional encoding as well
+
+
 class TransTLightningModule(pl.LightningModule):
 
     def __init__(self):
@@ -49,7 +72,7 @@ class TransTLightningModule(pl.LightningModule):
                             nn.Linear(512, 1),
                             nn.Sigmoid() 
                             )
-        
+    
         self.model1D = nn.Sequential(
             nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(1, 16), padding='same'),
             nn.ReLU(),
@@ -80,15 +103,17 @@ class TransTLightningModule(pl.LightningModule):
             nn.BatchNorm2d(256),
             )
         
-        self.transformer = Trans(embed_dim=512, num_heads=8, num_encoders=4, num_classes=512)
+        #self.transformer = Trans(embed_dim=520, num_heads=8, num_encoders=4, num_classes=520)
         #self.transformer = ViT(embed_dim=256, patch_size=(16, 16), num_patches=256, dropout=0.001, in_channels=5, num_heads=8, num_encoders=4, expansion=128, num_classes=512)
     
+        self.transformer = Trans(embed_dim=512, num_heads=8, num_encoders=4, num_classes=512, seq_len = 5)
+        #Trans(embed_dim=embed_dim, num_heads=num_heads, num_encoders=num_encoders, num_classes=num_classes, seq_len=seq_len)
     def forward(self, x):
-        #print(x.shape)            #torch.Size([128, 1, 5, 512])
+        #print(x.shape)            #torch.Size([128, 1, 5, 520])
         x = self.transformer(x)
         #print(x.shape)            #torch.Size([128, num_classes])
 
-        #print(x.shape)              #torch.Size([128, 1, 5, 512])
+        #print(x.shape)              #torch.Size([128, 1, 5, 520])
         #x = self.model1D(x)              
         #x = x.permute((0, 2, 1, 3))
         #print(x.shape)              #torch.Size([128, 5, 256, 256])  
@@ -139,7 +164,7 @@ class TransTLightningModule(pl.LightningModule):
 
             grads = []
 
-            for param in ViTLightningModule.parameters(self):
+            for param in TransTLightningModule.parameters(self):
 
                 if param.grad == None:
                     continue
@@ -157,7 +182,7 @@ class TransTLightningModule(pl.LightningModule):
                 print('nan occured here')
                 print('########################')
 
-                for name, param in ViTLightningModule.named_parameters(self):
+                for name, param in TransTLightningModule.named_parameters(self):
 
                     if torch.isnan(param).any():
                         print(name, file=f)
@@ -194,11 +219,17 @@ class TransTLightningModule(pl.LightningModule):
 
 
 class Trans(nn.Module):
-    def __init__(self, embed_dim, num_heads, num_encoders, num_classes):
+    def __init__(self, embed_dim, num_heads, num_encoders, num_classes, seq_len=5):
         super().__init__()
 
         # Register fixed positional encoding as a buffer
         self.register_buffer('positional_encoding', self._generate_positional_encoding(seq_len=5, embed_dim=embed_dim))
+        self.seq_len = seq_len
+        self.embed_dim = embed_dim
+        self.register_buffer(
+            'positional_encoding',
+            self._generate_positional_encoding(seq_len=self.seq_len, embed_dim=self.embed_dim)
+        )
 
         # Transformer Encoder
         encoder_layer = nn.TransformerEncoderLayer(
@@ -215,18 +246,28 @@ class Trans(nn.Module):
         self.fc = nn.Linear(embed_dim, num_classes)
 
     def forward(self, x):
-        #print(f"x.device: {x.device}")
-        #print(f"positional_encoding.device: {self.positional_encoding.device}")
-
-        # Ensure positional encoding matches the input device
+    # Ensure positional encoding matches input device
         positional_encoding = self.positional_encoding.to(x.device)
-        #print(f"positional_encoding (after move).device: {positional_encoding.device}")
 
-        x = x.squeeze(1)  # Remove the singleton channel dimension
+        # Dynamically regenerate positional encoding if input sequence length changes
+        if x.size(2) != self.seq_len:  # Check if seq_len (5) changes
+            positional_encoding = self._generate_positional_encoding(seq_len=x.size(2), embed_dim=self.embed_dim).to(x.device)
+
+        # Remove the singleton channel dimension (from [batch_size, 1, seq_len, embed_dim] -> [batch_size, seq_len, embed_dim])
+        x = x.squeeze(1)
+
+        # Add positional encoding to the input
         x = x + positional_encoding
+
+        # Pass through the transformer encoder
         x = self.encoder(x)
+
+        # Perform mean pooling over the sequence dimension
         x = x.mean(dim=1)
+
+        # Fully connected layer for classification or output
         x = self.fc(x)
+
         return x
 
     def _generate_positional_encoding(self, seq_len, embed_dim):
@@ -240,5 +281,7 @@ class Trans(nn.Module):
         pos_enc[:, 1::2] = torch.cos(pos * div_term[:, 1::2])
 
         return pos_enc.unsqueeze(0)  # (1, seq_len, embed_dim)
+
+
 
 

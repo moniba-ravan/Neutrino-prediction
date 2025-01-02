@@ -113,7 +113,7 @@ skip_connections = False
 
 # antennas file info location
 detector_file_location = '/mnt/hdd/nheyer/dl_playground/sim_file/detector.json'
-add_xyz = True
+add_xyz = False
 
 base_dir = '/mnt/hdd/moniba/Neutrino-prediction' #'/mnt/hdd/nheyer/dl_playground'
 model = "vit_model"  # Options: "resnet34", "vit_model", "transformer_model"
