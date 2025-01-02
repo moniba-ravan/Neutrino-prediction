@@ -51,9 +51,14 @@ src_hyper = 'hyperparameter.py'
 dst_hyper = 'results/' + args.Run_number + '/hyperparameter_' + args.Run_number + '.py'
 shutil.copy(src_hyper, dst_hyper)
 
-src_model= 'model.py'
-dst_model = 'results/' + args.Run_number + '/model_' + args.Run_number + '.py'
-shutil.copy(src_model, dst_model)
+# src_model= 'model.py'
+# dst_model = 'results/' + args.Run_number + '/model_' + args.Run_number + '.py'
+# shutil.copy(src_model, dst_model)
+
+# model-specific architecture file
+src_type_model= hyperparameter.model + '.py'
+dst_type_model = f'results/{args.Run_number}/{hyperparameter.model}_{args.Run_number}.py'
+shutil.copy(src_type_model, dst_type_model)
 
 src_run = 'run.py'
 dst_run = 'results/' + args.Run_number + '/run_' + args.Run_number + '.py'
@@ -75,7 +80,7 @@ train_loader = DataLoader(train, batch_size=hyperparameter.batchSize, shuffle=Fa
 val_loader = DataLoader(val, batch_size=hyperparameter.batchSize, shuffle=False, num_workers=hyperparameter.worker_num)
 
 #---------load the model
-model = get_model(hyperparameter.model)  # Update with the correct number of classes
+model = get_model(hyperparameter.model)  
 
 model.float()
 model.pdf_energy.double()

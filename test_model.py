@@ -27,22 +27,29 @@ parser.add_argument("--test_batchSize", type=int, default=16, help="test batch s
 
 args = parser.parse_args()
 
-model_dir = '/mnt/hdd/nheyer/dl_playground/results/' + args.Run_number + '/model/'
+base_dir = hyperparameter.base_dir
+model_dir = base_dir + '/results/' + args.Run_number + '/model/'
 model_file = 'model_checkpoint' + args.version + '.ckpt'
 
-hyper_file = '/mnt/hdd/nheyer/dl_playground/results/' + args.Run_number + '/hyperparameter_' + args.Run_number
+hyper_file = base_dir + '/results/' + args.Run_number + '/hyperparameter_' + args.Run_number
 
-spec = importlib.util.spec_from_file_location('hyperparameter', '/mnt/hdd/nheyer/dl_playground/results/' + args.Run_number + '/hyperparameter_' + args.Run_number + '.py')
+# load hyperparemeters
+spec = importlib.util.spec_from_file_location('hyperparameter', base_dir + '/results/' + args.Run_number + '/hyperparameter_' + args.Run_number + '.py')
 hyperparameter = importlib.util.module_from_spec(spec)
 sys.modules['hyperparameter'] = hyperparameter
 spec.loader.exec_module(hyperparameter)
 
-spec = importlib.util.spec_from_file_location('data_loader_gen', '/mnt/hdd/nheyer/dl_playground/results/' + args.Run_number + '/data_loader_' + args.Run_number + '.py')
+# load data_loader
+spec = importlib.util.spec_from_file_location('data_loader_gen', base_dir + '/results/' + args.Run_number + '/data_loader_' + args.Run_number + '.py')
 data_loader_gen = importlib.util.module_from_spec(spec)
 sys.modules['data_loader_gen'] = data_loader_gen
 spec.loader.exec_module(data_loader_gen)
 
-spec = importlib.util.spec_from_file_location('model_arch', '/mnt/hdd/nheyer/dl_playground/results/' + args.Run_number + '/model_' + args.Run_number + '.py')
+
+
+# load model architecture
+model_arch_path = f'results/{args.Run_number}/{hyperparameter.model}_{args.Run_number}.py'
+spec = importlib.util.spec_from_file_location('model_arch', model_arch_path)
 model_arch = importlib.util.module_from_spec(spec)
 sys.modules['model_arch'] = model_arch
 spec.loader.exec_module(model_arch)
@@ -56,8 +63,7 @@ test_loader = DataLoader(test_dataset, batch_size=args.test_batchSize, shuffle=F
 
 device = torch.device(f"cuda:0")
 
-
-model = model_arch.Split()
+model = model_arch.get_model()  
 
 print(torch.load(model_dir + model_file)['epoch'])
 #quit()
@@ -70,7 +76,7 @@ model.eval()
 
 
 
-save_path = '/mnt/hdd/nheyer/dl_playground/results/' + args.Run_number + '/full_y_pred/'
+save_path = base_dir + '/results/' + args.Run_number + '/full_y_pred/'
 if(not os.path.exists(save_path)):
     os.makedirs(save_path)
 
