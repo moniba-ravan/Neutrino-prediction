@@ -33,6 +33,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--Run_number", type=str, default='RunXXX', help="Name a new Run to be saved")
 args = parser.parse_args()
 
+
 saved_dir = 'results/' + args.Run_number
 saved_model_dir = 'results/' + args.Run_number + '/model'
 saved_plots_dir = 'results/' + args.Run_number + '/plots'
@@ -55,7 +56,7 @@ shutil.copy(src_hyper, dst_hyper)
 # dst_model = 'results/' + args.Run_number + '/model_' + args.Run_number + '.py'
 # shutil.copy(src_model, dst_model)
 
-# model-specific architecture file
+# model-specific architecture file - now we have three models
 src_type_model= hyperparameter.model + '.py'
 dst_type_model = f'results/{args.Run_number}/{hyperparameter.model}_{args.Run_number}.py'
 shutil.copy(src_type_model, dst_type_model)
@@ -110,7 +111,6 @@ cont_counter = 0
 max_counter = 100
 
 best_checkpoint_path = None
-#best_checkpoint_path = '/mnt/hdd/nheyer/gen2_shallow_reco/reconstruction/mix_model/results/Run008/model/model_checkpoint.ckpt'
 
 while cont_counter < max_counter:
 
