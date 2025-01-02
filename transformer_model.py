@@ -14,8 +14,7 @@ import math
 
 
 """
-Every class is a different 'class' of model that can be tuned and optimized by changing the hyperparameter in hyperparameter.py.
-After training the model is saved in results/RunXXX/model.
+A class representing the Original transformer model.
 """
 
 def get_model():
