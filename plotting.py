@@ -19,12 +19,15 @@ import seaborn as sns
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--Run_number", type=str, default='RunXXX', help="Name a new Run to be saved")
-parser.add_argument("--version", type=str, default='RunXXX', help="Name a new Run to be saved")
+parser.add_argument("--version", type=str, default='v1', help="Name a new Run to be saved")
 args = parser.parse_args()
 
-plots_path = '/mnt/hdd/nheyer/dl_playground/results/' + args.Run_number + '/plots/' + args.version + '/'
+
+base_dir = '/mnt/hdd/moniba/again/Neutrino-prediction/results'
+
+plots_path = base_dir + '/' + args.Run_number + '/plots/' + args.version + '/'
 #plots_path = '/mnt/hdd/nheyer/gen2_shallow_reco/reconstruction/mix_split/results/' + args.Run_number + '/plots/test/'
-results_path = '/mnt/hdd/nheyer/dl_playground/results/' + args.Run_number + '/full_y_pred/'
+results_path = base_dir + '/' + args.Run_number + '/full_y_pred/'
 
 if(not os.path.exists(plots_path)):
     os.makedirs(plots_path)
