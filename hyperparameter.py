@@ -5,17 +5,27 @@ The hyperparameters make it possible to alter and change the tunable parameters 
 After training the hyperparameters are saved in results/RunXXX.
 """
 
-#I use cc because it has less files than nccc so it is faster.
+# ==============================
+# Model Configuration
+# ==============================
+
+model = "vit_model"  # Options: "resnet34", "vit_model", "transformer_model"
+base_dir = '/mnt/hdd/moniba/Neutrino-prediction'
+
+
+# ==============================
+# Detector and Data Configuration
+# ==============================
+
+detector_file_location = '/mnt/hdd/nheyer/dl_playground/sim_file/detector.json'
+add_xyz = False
+
+# ==============================
+# Interaction Types: Select the interaction type (nc, cc, nccc)
+# ==============================
 nc = False
 cc = False
 nccc = True
-
-
-#DEFAULT SETTINGS FOR TESTING:
-# nccc, 18 train and 2 val files, 10000 events per file
-# epochs = 10
-
-#Settings for nc1, cc1 & nccc1: 6 train, 2 val, 5 test, 10000 events, 10 epochs
 
 if nc:
 
@@ -57,21 +67,30 @@ elif nccc:
     interaction = 'nccc'
 
 
-#Here I make it faster by using less events per file.
-n_events_per_file = 10000
+# ==============================
+# Dataset Configuration
+# ==============================
+
+n_events_per_file = 10000 # Number of events per file
 data_name = 'shallow_baseline_'     #deep_baseline_10k_00000X.npy
 
+# Filter path for preprocessing
 filter_path = '/mnt/hdd/nheyer/data/filters/500MHz_filter.npy'
 
+# Coordinate system for dataset
 coordinates = 'spherical'
 auto_opt = False
 
-#events per data set
+# Total events for each dataset
 train_data_points = n_events_per_file * n_files_train
 val_data_points = n_events_per_file * n_files_val
 test_data_points = n_events_per_file * n_files_test 
 
-#training parameters
+
+# ==============================
+# Training Configuration
+# ==============================
+
 epochs = 250    #250
 model_name = "Trans"
 learning_rate = 0.0005
@@ -82,9 +101,13 @@ norm = 1e-6
 batchSize = 128
 min_lr = 0.000001
 
+# Number of workers for data loading
 worker_num = 0
 
-#model parameters
+# ==============================
+# Model Architecture Configuration
+# ==============================
+
 conv2D_filter_size = 16
 pooling_size = 4
 amount_Conv2D_layers_per_block = 3 
@@ -96,6 +119,7 @@ sch_factor = 0.2
 momentum = 0.99
 padding = 'same'
 
+# Number of filters for each convolutional layer
 conv1_layers = 32
 conv2_layers = 64
 conv3_layers = 128
@@ -103,18 +127,11 @@ conv4_layers = 256
 
 output_layer = 1
 
+# ==============================
+# Model-Specific Configuration
+# ==============================
 cond_input = 512       #Set to 512 for ViT & 1000 for ResNet
 mlp_layers = '512'  
 
 numb_of_classes = 2
 skip_connections = False
-
-
-
-# antennas file info location
-detector_file_location = '/mnt/hdd/nheyer/dl_playground/sim_file/detector.json'
-add_xyz = False
-
-base_dir = '/mnt/hdd/moniba/Neutrino-prediction' #'/mnt/hdd/nheyer/dl_playground'
-model = "vit_model"  # Options: "resnet34", "vit_model", "transformer_model"
-
