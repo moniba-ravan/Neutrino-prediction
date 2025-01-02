@@ -1,3 +1,4 @@
-results/*/full_y_pred/
+results/*
+!results/*/plots/
 __pycache__/
 data/
