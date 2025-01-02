@@ -66,9 +66,9 @@ elif cc:
 
 elif nccc:
 
-    n_files_train = 180    #180
-    n_files_val = 20      #20
-    n_files_test = 10     #10
+    n_files_train = 2    #180
+    n_files_val = 1      #20
+    n_files_test = 1     #10
 
     #datafile and path name NCCC
     data_location_training = '/mnt/hdd/nheyer/data/gen2_shallow_baseline/nc_cc/training'
@@ -102,7 +102,7 @@ test_data_points = n_events_per_file * n_files_test
 # Training Configuration
 # ==============================
 
-epochs = 250    #250
+epochs = 3    #250
 model_name = "Trans"
 learning_rate = 0.0005
 es_patience = 10

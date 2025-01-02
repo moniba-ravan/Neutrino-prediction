@@ -27,14 +27,14 @@ parser.add_argument("--test_batchSize", type=int, default=16, help="test batch s
 
 args = parser.parse_args()
 
-base_dir = '/mnt/hdd/moniba/Neutrino-prediction' 
+base_dir = '/mnt/hdd/moniba/final/Neutrino-prediction' 
 model_dir = base_dir + '/results/' + args.Run_number + '/model/'
 model_file = 'model_checkpoint-' + args.version + '.ckpt'
 
 
 # load hyperparemeters
 hyper_file = base_dir + '/results/' + args.Run_number + '/hyperparameter_' + args.Run_number + '.py'
-print(hyper_file)
+
 spec = importlib.util.spec_from_file_location('hyperparameter', hyper_file)
 hyperparameter = importlib.util.module_from_spec(spec)
 sys.modules['hyperparameter'] = hyperparameter
