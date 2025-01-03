@@ -221,66 +221,66 @@ class Trans(nn.Module):
     def __init__(self, embed_dim, num_heads, num_encoders, num_classes, seq_len=5):
         super().__init__()
 
-        # Register fixed positional encoding as a buffer
-        self.register_buffer('positional_encoding', self._generate_positional_encoding(seq_len=5, embed_dim=embed_dim))
+        # Positional encoding is added to help the model understand the order of the sequence.
+        self.register_buffer('positional_encoding', self._generate_positional_encoding(seq_len=seq_len, embed_dim=embed_dim))
+
+        # Save the sequence length and embedding size for later use.
         self.seq_len = seq_len
         self.embed_dim = embed_dim
-        self.register_buffer(
-            'positional_encoding',
-            self._generate_positional_encoding(seq_len=self.seq_len, embed_dim=self.embed_dim)
+
+        # Transformer Encoder layer with attention and feedforward components.
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=embed_dim,  # Size of embeddings
+            nhead=num_heads,    # Number of attention heads
+            dim_feedforward=1024,  # Hidden layer size in feedforward network
+            activation="gelu",     # Activation function
+            batch_first=True,      # Input shape: [batch, seq_len, embed_dim]
+            norm_first=True        # Apply normalization before attention/FFN
         )
 
-        # Transformer Encoder
-        encoder_layer = nn.TransformerEncoderLayer(
-            d_model=embed_dim,
-            nhead=num_heads,
-            dim_feedforward=1024,
-            activation="gelu",
-            batch_first=True,
-            norm_first=True
-        )
+        # Stack multiple encoder layers to form the Transformer Encoder.
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_encoders)
 
-        # Fully connected layer for output
+        # Fully connected layer to convert embeddings to class predictions.
         self.fc = nn.Linear(embed_dim, num_classes)
 
     def forward(self, x):
-    # Ensure positional encoding matches input device
+        # Ensure positional encoding is on the same device as input.
         positional_encoding = self.positional_encoding.to(x.device)
 
-        # Dynamically regenerate positional encoding if input sequence length changes
-        if x.size(2) != self.seq_len:  # Check if seq_len (5) changes
+        # If sequence length changes, regenerate positional encodings.
+        if x.size(2) != self.seq_len:
             positional_encoding = self._generate_positional_encoding(seq_len=x.size(2), embed_dim=self.embed_dim).to(x.device)
 
-        # Remove the singleton channel dimension (from [batch_size, 1, seq_len, embed_dim] -> [batch_size, seq_len, embed_dim])
+        # Remove the extra dimension from input: [batch, 1, seq_len, embed_dim] -> [batch, seq_len, embed_dim]
         x = x.squeeze(1)
 
-        # Add positional encoding to the input
+        # Add positional encoding to the input.
         x = x + positional_encoding
 
-        # Pass through the transformer encoder
+        # Pass the input through the Transformer Encoder.
         x = self.encoder(x)
 
-        # Perform mean pooling over the sequence dimension
+        # Pool the sequence by taking the mean across the sequence dimension.
         x = x.mean(dim=1)
 
-        # Fully connected layer for classification or output
+        # Pass through the fully connected layer to get the final output.
         x = self.fc(x)
 
         return x
 
     def _generate_positional_encoding(self, seq_len, embed_dim):
-        pos = torch.arange(seq_len).unsqueeze(1)  # (seq_len, 1)
-        i = torch.arange(embed_dim).unsqueeze(0)  # (1, embed_dim)
+        # Generate positions and embedding indices.
+        pos = torch.arange(seq_len).unsqueeze(1)  # Positions: [seq_len, 1]
+        i = torch.arange(embed_dim).unsqueeze(0)  # Embedding dims: [1, embed_dim]
+
+        # Compute scaling factors for positional encodings.
         div_term = torch.exp(-math.log(10000.0) * (2 * (i // 2)) / embed_dim)
 
-        # Sine and cosine positional encodings
+        # Apply sine to even dimensions and cosine to odd dimensions.
         pos_enc = torch.zeros(seq_len, embed_dim)
-        pos_enc[:, 0::2] = torch.sin(pos * div_term[:, 0::2])
-        pos_enc[:, 1::2] = torch.cos(pos * div_term[:, 1::2])
+        pos_enc[:, 0::2] = torch.sin(pos * div_term[:, 0::2])  # Even dimensions
+        pos_enc[:, 1::2] = torch.cos(pos * div_term[:, 1::2])  # Odd dimensions
 
-        return pos_enc.unsqueeze(0)  # (1, seq_len, embed_dim)
-
-
-
-
+        # Add batch dimension: [1, seq_len, embed_dim]
+        return pos_enc.unsqueeze(0)
