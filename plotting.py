@@ -23,7 +23,7 @@ parser.add_argument("--version", type=str, default='v1', help="Name a new Run to
 args = parser.parse_args()
 
 
-base_dir = '/mnt/hdd/moniba/again/Neutrino-prediction/results'
+base_dir = '/mnt/hdd/moniba/final/Neutrino-prediction/results'
 
 plots_path = base_dir + '/' + args.Run_number + '/plots/' + args.version + '/'
 #plots_path = '/mnt/hdd/nheyer/gen2_shallow_reco/reconstruction/mix_split/results/' + args.Run_number + '/plots/test/'
