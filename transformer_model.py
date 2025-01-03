@@ -41,9 +41,6 @@ Every class is a different 'class' of model that can be tuned and optimized by c
 After training the model is saved in results/RunXXX/model.
 """
 
-#The patch embedding from the article that me and Sissi where reading, it includes positional encoding as well
-
-
 class TransTLightningModule(pl.LightningModule):
 
     def __init__(self):
